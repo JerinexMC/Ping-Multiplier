@@ -26,18 +26,15 @@ public final class BotPingSpoofPlugin extends JavaPlugin implements Listener, Co
 
     private static final String HANDLER_NAME = "bot_ping_spoof_handler";
 
-    // UUID -> Base Ping (ms)
     private final Map<UUID, Integer> customBasePings = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> currentLivePings = new ConcurrentHashMap<>();
 
-    // Cached Reflection handles
     private Method craftPlayerGetHandle;
     private Field connectionField;
     private Field networkManagerField;
     private Field channelField;
 
     private Class<?> packetClass;
-    private Field actionsField;
     private Field entriesField;
     private Class<?> entryClass;
     private Constructor<?> entryConstructor;
@@ -66,7 +63,6 @@ public final class BotPingSpoofPlugin extends JavaPlugin implements Listener, Co
         Bukkit.getPluginManager().registerEvents(this, this);
         Objects.requireNonNull(getCommand("botping")).setExecutor(this);
 
-        // Inject into already-online real players (in case of /reload)
         for (Player player : Bukkit.getOnlinePlayers()) {
             injectPlayer(player);
         }
@@ -88,7 +84,6 @@ public final class BotPingSpoofPlugin extends JavaPlugin implements Listener, Co
         Player player = event.getPlayer();
         injectPlayer(player);
 
-        // Assign initial ping if 0ms
         Bukkit.getScheduler().runTaskLater(this, () -> {
             if (player.isOnline() && shouldSpoof(player)) {
                 assignNewJitter(player.getUniqueId());
@@ -262,7 +257,7 @@ public final class BotPingSpoofPlugin extends JavaPlugin implements Listener, Co
         try {
             Object handle = craftPlayerGetHandle.invoke(player);
             Object connection = connectionField.get(handle);
-            if (connection == null) return null; // Fake server bots have null connection
+            if (connection == null) return null;
             Object networkManager = networkManagerField.get(connection);
             return (Channel) channelField.get(networkManager);
         } catch (Exception e) {
@@ -308,22 +303,21 @@ public final class BotPingSpoofPlugin extends JavaPlugin implements Listener, Co
             packetClass = Class.forName("net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket");
             for (Field f : packetClass.getDeclaredFields()) {
                 f.setAccessible(true);
-                if (EnumSet.class.isAssignableFrom(f.getType())) {
-                    actionsField = f;
-                } else if (List.class.isAssignableFrom(f.getType())) {
+                if (List.class.isAssignableFrom(f.getType())) {
                     entriesField = f;
                 }
             }
 
             Class<?> actionEnum = Class.forName("net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket$Action");
-            updateLatencyEnumConstant = Enum.valueOf((Class<Enum>) actionEnum, "UPDATE_LATENCY");
+            @SuppressWarnings({"rawtypes", "unchecked"})
+            Enum<?> latencyConst = Enum.valueOf((Class<Enum>) actionEnum, "UPDATE_LATENCY");
+            updateLatencyEnumConstant = latencyConst;
             packetConstructor = packetClass.getConstructor(EnumSet.class, Collection.class);
 
             entryClass = Class.forName("net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket$Entry");
             entryConstructor = entryClass.getDeclaredConstructors()[0];
             entryConstructor.setAccessible(true);
 
-            // Record components / fields in order
             Field[] fields = entryClass.getDeclaredFields();
             List<Field> instanceFields = new ArrayList<>();
             for (Field f : fields) {
