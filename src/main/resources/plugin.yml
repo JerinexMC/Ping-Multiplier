@@ -1,0 +1,10 @@
+name: BotPingSpoof
+version: 1.0.0
+main: com.jerinex.botpingspoof.BotPingSpoofPlugin
+api-version: '1.21'
+description: Spoofs realistic fluctuating ping for 0ms server bots without external dependencies.
+commands:
+  botping:
+    description: Force-set or randomize spoofed ping for a player/bot
+    usage: /botping <player|reload> [ping|auto]
+    permission: botpingspoof.admin

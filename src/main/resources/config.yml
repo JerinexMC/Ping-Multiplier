@@ -1,0 +1,9 @@
+# Automatically spoof anyone whose real ping is 0 ms (like server bots)
+auto-spoof-zero-ping: true
+
+# Default random ping range (in ms) for auto-spoofed bots
+min-ping: 38
+max-ping: 135
+
+# How often (in ticks, 20 ticks = 1 second) to refresh bot ping jitter
+update-interval-ticks: 60
