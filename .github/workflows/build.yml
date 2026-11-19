@@ -13,7 +13,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - run: mvn clean package
+      - run: mvn -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.wagon.providers.http.HttpWagon=warn clean package
       - uses: actions/upload-artifact@v4
         with:
           name: BotPingSpoof-Jar
